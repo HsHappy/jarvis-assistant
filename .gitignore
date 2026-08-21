@@ -1,0 +1,15 @@
+# Kişisel ve Hassas Veriler
+patron_yuzu.yml
+jarvis_memory.db
+.env
+
+# Python Derleme ve Ortam Dosyaları
+__pycache__/
+*.pyc
+env/
+venv/
+
+# auto-py-to-exe Çıktıları
+build/
+dist/
+*.spec

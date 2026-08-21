@@ -3,6 +3,7 @@ import speech_recognition as sr
 import numpy as np
 import wave
 import os
+import winsound
 
 def beni_dinle(saniye=5):
     r = sr.Recognizer()
@@ -48,3 +49,38 @@ if __name__ == "__main__":
         print("\n!!! LÜTFEN KONTROL EDİN !!!")
         print(f"Proje klasörünüzde 'test_sesi.wav' adında bir dosya oluştu.")
         print("Lütfen o dosyayı açıp dinleyin. Kendi sesinizi duyabiliyor musunuz?")
+
+def uyandirma_bekle():
+    r = sr.Recognizer()
+    ornekleme_hizi = 44100
+    dosya_adi = "wake_word.wav"
+    
+    print("\n[Uyku Modu] Jarvis dinliyor... (Uyandırmak için 'Jarvis' deyin)")
+    
+    while True:
+        # Sadece 2.5 saniyelik kısa bir ortam dinlemesi yapıyoruz
+        ses_verisi = sd.rec(int(2.5 * ornekleme_hizi), samplerate=ornekleme_hizi, channels=1, dtype='int16')
+        sd.wait()
+        
+        with wave.open(dosya_adi, "wb") as f:
+            f.setnchannels(1)
+            f.setsampwidth(2)
+            f.setframerate(ornekleme_hizi)
+            f.writeframes(ses_verisi.tobytes())
+            
+        with sr.AudioFile(dosya_adi) as kaynak:
+            audio_data = r.record(kaynak)
+            
+        try:
+            # Sesi hızlıca Google'a sor
+            metin = r.recognize_google(audio_data, language="tr-TR").lower()
+            
+            # Eğer duyduğu 2.5 saniyelik sesin içinde 'jarvis' kelimesi geçiyorsa uyandır!
+            if "jarvis" in metin or "carvis" in metin:  # Türkçe okunuş ihtimalini de ekledik
+                print("\nJarvis uyandı!")
+                # Siri gibi uyandığını belli etmek için kısa bir BİP sesi çıkar
+                winsound.Beep(1000, 300) 
+                return True
+        except:
+            # Sessizlik veya anlamsız gürültü varsa hiçbir şey yapma, uyumaya devam et
+            pass

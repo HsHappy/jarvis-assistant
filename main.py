@@ -24,8 +24,13 @@ def asistan_dongusu():
         if mod == '1':
             kullanici_mesaji = input("\nSen: ")
         else:
+            # --- WAKE WORD BEKLEME ---
+            # Kod burada asılı kalır ve sen "Jarvis" diyene kadar aşağıdaki satırlara geçmez
+            ears.uyandirma_bekle()
+            
+            print("Sizi dinliyorum efendim...")
             kullanici_mesaji = ears.beni_dinle(saniye=5)
-            # Mikrofon boş ses duyduysa döngüyü başa sar
+            
             if not kullanici_mesaji:
                 continue
             print(f"\nSen: {kullanici_mesaji}")

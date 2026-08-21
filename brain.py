@@ -1,35 +1,48 @@
-import ollama
+from openai import OpenAI
 import memory
 
+# OpenRouter API yapılandırması
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key="BURAYA_API_ANAHTARI_GELECEK" 
+)
+
 def jarvis_ile_konus(kullanici_mesaji):
-    print("Jarvis geçmişi tarıyor ve düşünüyor...")
-
-    # 1. Senin yazdığın yeni mesajı veritabanına kaydet (rol: user)
+    print("Jarvis buluttaki nöral ağlara bağlanıyor...")
+    
+    # 1. Mesajı hafızaya kaydet ve geçmişi çek
     memory.mesaj_kaydet('user', kullanici_mesaji)
-
-    # 2. Veritabanından eski konuşmaları çek (Token sınırını aşmamak için son 10 mesajı alıyoruz)
     eski_mesajlar = memory.gecmisi_getir(limit=10)
     
-    # Modele önce kim olduğunu ve nasıl davranması gerektiğini söylüyoruz
+    # 2. Jarvis'in sistem karakteri
     sistem_mesaji = {
         'role': 'system', 
-        'content': 'Senin adın Jarvis. Sen son derece zeki, saygılı ve yardımsever bir yapay zeka asistanısın. Kullanıcıya her zaman, istisnasız olarak sadece düzgün, gramer kurallarına uygun, doğal bir Türkçe ile yanıt vermelisin. İngilizce kelimeler kullanmaktan kaçın ve yanıtlarını kısa, öz ve anlaşılır tut.'
+        'content': '''Senin adın Jarvis. Sadece düzgün, gramer kurallarına uygun, doğal bir Türkçe kullan. 
+        Asla uydurma kelimeler üretme. Yanıtların kısa, öz ve profesyonel olsun. 
+        Sen kıdemli bir yazılım mimarı ve mühendislik mentorusun. 
+        Bana sadece çalışan kodu verme; kodun arkasındaki mühendislik kararlarını, kurumsal güvenlik standartlarını 
+        ve performans optimizasyonlarını da kısaca açıkla. 
+        Kodlarımın modüler, bakımı kolay ve profesyonel standartlarda olmasını sağla.'''
     }
     
-    # 4. Sistemin kafasındaki asıl mesaj paketi (Sistem Komutu + Eski Konuşmalar)
-    # Eski konuşmaların en sonunda zaten senin az önce SQL'e kaydettiğimiz yeni mesajın da var.
     gonderilecek_mesajlar = [sistem_mesaji] + eski_mesajlar
     
-    # 5. Tüm bu paketi Ollama'ya gönder
-    cevap = ollama.chat(
-        model='llama3', 
-        messages=gonderilecek_mesajlar,
-        options={'temperature': 0.2}
-    )
-    
-    asistanin_cevabi = cevap['message']['content']
-    
-    # 6. Jarvis'in ürettiği cevabı da SQL'e kaydet (rol: assistant) ki bir sonraki sefer onu da hatırlasın
-    memory.mesaj_kaydet('assistant', asistanin_cevabi)
-    
-    return asistanin_cevabi
+    try:
+        # 3. OpenRouter üzerinden devasa bir model çağırıyoruz
+        # Not: 'meta-llama/llama-3.1-8b-instruct:free' modeli test için tamamen ücretsizdir. 
+        # İstersen burayı 'meta-llama/llama-3.1-70b-instruct' ile değiştirebilirsin.
+        response = client.chat.completions.create(
+            model="google/gemma-4-26b-a4b-it:free",
+            messages=gonderilecek_mesajlar,
+            temperature=0.3
+        )
+        
+        asistanin_cevabi = response.choices[0].message.content
+        
+        # 4. Gelen zekice cevabı hafızaya yaz ve döndür
+        memory.mesaj_kaydet('assistant', asistanin_cevabi)
+        return asistanin_cevabi
+        
+    except Exception as e:
+        print(f"[API HATASI]: {e}")
+        return "Beyin sunucularına bağlanırken bir ağ hatası oluştu."
